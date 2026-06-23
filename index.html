@@ -548,11 +548,16 @@ function renderUserSelectScreen() {
   const usersHtml = users.length === 0
     ? `<div class="empty-hint">尚未建立任何使用者，請於下方新增</div>`
     : users.map(u => `
-      <button class="user-row select-user-btn" data-user="${escapeHtml(u)}">
-        <span class="user-row__avatar">${escapeHtml(u.slice(0,1).toUpperCase())}</span>
-        <span class="user-row__name">${escapeHtml(u)}</span>
-        <span class="user-row__go">→</span>
-      </button>`).join('');
+      <div class="user-row" style="padding:0;display:flex;align-items:center;gap:0;">
+        <button class="select-user-btn" style="flex:1;display:flex;align-items:center;gap:12px;text-align:left;background:none;border:none;padding:13px 14px;min-width:0;" data-user="${escapeHtml(u)}">
+          <span class="user-row__avatar">${escapeHtml(u.slice(0,1).toUpperCase())}</span>
+          <span class="user-row__name">${escapeHtml(u)}</span>
+          <span class="user-row__go">→</span>
+        </button>
+        <button class="delete-user-btn iconbtn" style="margin-right:8px;flex:none;color:var(--bad);border-color:var(--bad-border);" data-user="${escapeHtml(u)}" aria-label="刪除使用者" title="刪除此使用者">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+      </div>`).join('');
 
   mainArea.innerHTML = `
     <div class="hero">
@@ -581,11 +586,26 @@ function renderUserSelectScreen() {
   document.querySelectorAll('.select-user-btn').forEach(btn => {
     btn.addEventListener('click', () => enterAsUser(btn.getAttribute('data-user')));
   });
+  document.querySelectorAll('.delete-user-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleDeleteUser(btn.getAttribute('data-user'));
+    });
+  });
   document.getElementById('createUserBtn').addEventListener('click', handleCreateUser);
   document.getElementById('newUserInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') handleCreateUser();
   });
   document.getElementById('importDataBtn').addEventListener('click', () => importFileInput.click());
+}
+
+function handleDeleteUser(name) {
+  if (!confirm(`確定要刪除使用者「${name}」嗎？\n此操作會同時清除該使用者的作答進度與錯題複習本，且無法復原。`)) return;
+  const users = loadUserList().filter(u => u !== name);
+  saveUserList(users);
+  localStorage.removeItem(LS_WRONG_PREFIX + name);
+  localStorage.removeItem(LS_PROGRESS_PREFIX + name);
+  renderUserSelectScreen();
 }
 
 function handleCreateUser() {
